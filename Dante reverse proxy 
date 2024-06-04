@@ -1,0 +1,91 @@
+
+Setting up a reverse proxy with SOCKS5 support requires using a proxy server like Dante. In this example, I'll demonstrate how to install and configure Dante on an AWS EC2 instance.
+
+1. Launch an AWS EC2 instance with Amazon Linux 2 or a similar Linux distribution. Make sure to configure the security groups to allow incoming traffic on the ports you'll be using for the Dante proxy (e.g., 1080).
+
+2. SSH into the EC2 instance.
+
+3. Update the package list and install necessary packages:
+
+```bash
+sudo yum update -y
+sudo yum install -y gcc make wget
+```
+
+4. Download and install Dante:
+
+```bash
+wget https://www.inet.no/dante/files/dante-1.4.2.tar.gz
+tar xvf dante-1.4.2.tar.gz
+cd dante-1.4.2
+./configure
+make
+sudo make install
+```
+
+5. Create a configuration file for Dante:
+
+```bash
+sudo nano /etc/sockd.conf
+```
+
+6. Add the following configuration to the `sockd.conf` file:
+
+```
+logoutput: /var/log/sockd.log
+
+internal: eth0 port = 1080
+external: eth0
+
+clientmethod: none
+socksmethod: none
+
+client pass {
+    from: 0.0.0.0/0 to: 0.0.0.0/0
+    log: error connect disconnect
+}
+
+socks pass {
+    from: 0.0.0.0/0 to: 0.0.0.0/0
+    log: error connect disconnect
+}
+```
+
+This configuration allows all incoming connections without authentication. For a production environment, consider setting up authentication and limiting access to specific IP ranges.
+
+7. Start the Dante SOCKS proxy server:
+
+```bash
+sudo sockd -D -f /etc/sockd.conf -N 1
+```
+
+8. To run Dante on startup, create a systemd service file:
+
+```bash
+sudo nano /etc/systemd/system/dante.service
+```
+
+9. Add the following content to the `dante.service` file:
+
+```
+[Unit]
+Description=Dante SOCKS Proxy Server
+After=network-online.target
+
+[Service]
+ExecStart=/usr/local/sbin/sockd -f /etc/sockd.conf -N 1
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+10. Enable and start the Dante service:
+
+```bash
+sudo systemctl enable dante
+sudo systemctl start dante
+```
+
+Now you have a reverse proxy with SOCKS5 support running on your AWS EC2 instance. You can configure your applications to use the proxy server on the EC2 instance's IP address and port 1080.
+Sent from my iPhone

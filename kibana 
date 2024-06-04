@@ -1,0 +1,38 @@
+
+bash
+pip install requests
+
+python
+import requests
+import json
+
+# Your existing Elasticsearch code
+
+# Kibana API integration
+kibana_url = "http://localhost:5601"  # Update with your Kibana URL if different
+
+# Create a new Kibana index pattern
+def create_index_pattern(pattern_id, pattern_name):
+    headers = {
+        "Content-Type": "application/json",
+        "kbn-xsrf": "true",
+    }
+    data = {
+        "attributes": {
+            "title": pattern_name,
+            "timeFieldName": "@timestamp",
+        }
+    }
+    response = requests.post(f"{kibana_url}/api/saved_objects/index-pattern/{pattern_id}",
+                             headers=headers, data=json.dumps(data))
+    return response.json()
+
+# Replace 'your_index_pattern_id' and 'your_index_pattern_name' with your desired values
+result = create_index_pattern("your_index_pattern_id", "your_index_pattern_name")
+
+if "error" in result:
+    print(f"Error: {result['error']['message']}")
+else:
+    print(f"Index pattern created successfully: {result['attributes']['title']}")
+
+Sent from my iPhone
